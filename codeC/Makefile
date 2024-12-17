@@ -4,9 +4,9 @@ CC = gcc
 CFLAGS = -Wall -Werror -g
 SOURCES = source/main.c source/io.c source/avl.c source/station.c
 OBJECTS = $(SOURCES:.c=.o)
-TARGET = c-wire # Nom de l'exécutable (généré dans le dossier courant)
+TARGET = c-wire # Name of the executable(generated in the current directory)
 
-# Règles
+# Rules
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
@@ -18,6 +18,6 @@ objs/%.o: source/%.c
 
 clean:
 	@echo "Cleaning up..."
-	rm -rf objs/*.o c-wire # S'assure que l'exécutable est supprimé ici
+	rm -rf objs/*.o c-wire # Ensures the executable is removed here
 
 .PHONY: all clean
