@@ -18,7 +18,7 @@ int balance_factor(AVLNode* node);
 AVLNode* rotate_right(AVLNode* a);
 AVLNode* rotate_left(AVLNode* a);
 AVLNode* insert_avl(AVLNode* root,char* id_station, int capacity, int load);
-void inorder_traversal(AVLNode* root, void (*action)(AVLNode* node, void* context), void* context);
+void inorder_traversal(AVLNode* root, void(*action)(AVLNode*,void*), void* context);
 void free_avl(AVLNode* root);
 
 #endif
