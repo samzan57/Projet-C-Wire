@@ -30,36 +30,36 @@ int balance_factor(AVLNode* node) {
 }
 
 // Rotation droite
-AVLNode* rotate_right(AVLNode* y) {
-    AVLNode* x = y->left;
-    AVLNode* T = x->right;
+AVLNode* rotate_right(AVLNode* a) {
+    AVLNode* pivot = a->left;
+    AVLNode* temp = pivot->right;
 
-    x->right = y;
-    y->left = T;
+    pivot->right = a;
+    a->left = temp;
 
     // Mise à jour des hauteurs
-    y->height = 1 + (height(y->left) > height(y->right) ? height(y->left) : height(y->right));
-    x->height = 1 + (height(x->left) > height(x->right) ? height(x->left) : height(x->right));
+    a->height = 1 + (height(a->left) > height(a->right) ? height(a->left) : height(a->right));
+    pivot->height = 1 + (height(pivot->left) > height(pivot->right) ? height(pivot->left) : height(pivot->right));
 
-    return x; // Nouveau root
+    return pivot; // Nouveau root
 }
 
 // Rotation gauche
-AVLNode* rotate_left(AVLNode* x) {
-    AVLNode* y = x->right;
-    AVLNode* T = y->left;
+AVLNode* rotate_left(AVLNode* a) {
+    AVLNode* pivot = a->right;
+    AVLNode* temp = pivot->left;
 
-    y->left = x;
-    x->right = T;
+    pivot->left = a;
+    a->right = temp;
 
     // Mise à jour des hauteurs
-    x->height = 1 + (height(x->left) > height(x->right) ? height(x->left) : height(x->right));
-    y->height = 1 + (height(y->left) > height(y->right) ? height(y->left) : height(y->right));
+    a->height = 1 + (height(a->left) > height(a->right) ? height(a->left) : height(a->right));
+    pivot->height = 1 + (height(pivot->left) > height(pivot->right) ? height(pivot->left) : height(pivot->right));
 
-    return y; // Nouveau root
+    return pivot; // Nouveau root
 }
 
-// Insertion dans l'arbre AVL
+
 // Insertion dans l'arbre AVL
 AVLNode* insert_avl(AVLNode* root, char* id_station, int capacity, int load) {
     if (!root) return create_node(id_station, capacity, load);
