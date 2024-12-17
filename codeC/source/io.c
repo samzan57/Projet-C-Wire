@@ -11,7 +11,7 @@
 AVLNode* charger_fichier_csv(char* chemin_fichier) {
     FILE* fichier = fopen(chemin_fichier, "r");
     if (!fichier) {
-        perror("Erreur lors de l'ouverture du fichier");
+        perror ("Erreur lors de l'ouverture du fichier");
         return NULL;
     }
 
