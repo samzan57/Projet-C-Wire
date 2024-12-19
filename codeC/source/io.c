@@ -1,13 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "station.h"
-#include "avl.h"
+#include "global.h"
 
-// Taille maximale d'une ligne du fichier
+// Maximum size of a line in the file
 #define MAX_LINE 1024
 
-// Fonction pour charger les données du fichier CSV
+// Function to load data from the CSV file
 AVLNode* charger_fichier_csv(char* chemin_fichier) {
     FILE* fichier = fopen(chemin_fichier, "r");
     if (!fichier) {
@@ -19,11 +18,11 @@ AVLNode* charger_fichier_csv(char* chemin_fichier) {
     AVLNode* root = NULL;
 
     int ligne_num = 0;
-    // Lire chaque ligne du fichier
+    // Read each line of the file
     while (fgets(ligne, MAX_LINE, fichier)) {
         ligne_num++;
 
-        // Ignorer l'entête
+        // Ignore the header
         if (ligne_num == 1 && strstr(ligne, "id_station:capacity:load") != NULL) {
             continue;
         }
@@ -37,11 +36,11 @@ AVLNode* charger_fichier_csv(char* chemin_fichier) {
             continue;
         }
 
-        // Conversion sécurisée des chaînes en entier
+        // Secure conversion of strings to integers
         int capacity = atoi(capacity_str);
         int load = atoi(load_str);
 
-        // Insertion dans l'arbre AVL
+        // Insert into the AVL tree
         root = insert_avl(root, id_station, capacity, load);
     }
 
@@ -49,7 +48,7 @@ AVLNode* charger_fichier_csv(char* chemin_fichier) {
     return root;
 }
 
-// Parcours infixe pour écrire les données dans un fichier
+// In-order traversal to write data to a file
 void parcours_infixe(AVLNode* node, FILE* fichier) {
     if (!node) return;
 
@@ -58,7 +57,7 @@ void parcours_infixe(AVLNode* node, FILE* fichier) {
     parcours_infixe(node->right, fichier);
 }
 
-// Fonction pour exporter l'arbre AVL vers un fichier CSV
+// Function to export the AVL tree to a CSV file
 int exporter_avl_csv(AVLNode* root, char* chemin_fichier) {
     FILE* fichier = fopen(chemin_fichier, "w");
     if (!fichier) {
