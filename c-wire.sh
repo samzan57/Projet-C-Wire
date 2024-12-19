@@ -19,23 +19,20 @@ afficher_aide() {
   exit 0
 }
 
-# Vérification si l'option -h est présente
-if [[ "$1" == "-h" ]]; then
-  afficher_aide
-fi
+# Gestion de sortie
+exit_script() {
+  end_time=$(date +%s.%N)
+  elapsed_time=$(echo "$end_time - $start_time" | bc)
 
-# Initialisation des variables
+  if [ "$1" -ne 0 ]; then
+    echo "Erreur rencontrée. Temps d'exécution: $elapsed_time seconds."
+  else
+    echo "temps écoulé: $elapsed_time secondes"
+    echo "le fichier final est diponible dans: $aggregated_output_file"
+  fi
 
-station_type="$1"
-consumer_type="$2"
-central_id="$3"
-
-# Vérification des arguments
-if [ $# -lt 2 ]; then
-  echo "DEBUG : Arguments insuffisants"
-  echo "Erreur : Veuillez fournir au moins deux arguments (station et consommateur)."
-  afficher_aide
-fi
+  exit "$1"
+}
 
 # Recherche automatique du fichier d'entrée dans le dossier input/
 file_path=$(ls input/*.dat 2>/dev/null | head -n 1)
@@ -44,8 +41,24 @@ if [ -z "$file_path" ]; then
   echo "Erreur : Aucun fichier d'entrée trouvé dans le dossier 'input/'."
   exit 1
 fi
+# Initialisation de la variable start_time pour calculer le temps d'exécution
+start_time=$(date +%s.%N)
 
+# Initialisation des variables
+station_type="$1"
+consumer_type="$2"
+central_id="$3"
 
+# Vérification si l'option -h est présente
+if [[ "$1" == "-h" ]]; then
+  afficher_aide
+fi
+# Vérification des arguments
+if [ $# -lt 2 ]; then
+  echo "DEBUG : Arguments insuffisants"
+  echo "Erreur : Veuillez fournir au moins deux arguments (station et consommateur)."
+  afficher_aide
+fi
 
 # Vérification des options interdites
 if [[ "$station_type" == "hva" && "$consumer_type" == "all" ]] ||
@@ -61,12 +74,34 @@ graphs_path="graphs"
 tmp_path="tmp"
 tests_path="tests"
 
-[ -d "$graphs_path" ] || mkdir -p "$graphs_path"
-[ -d "$tmp_path" ] || mkdir -p "$tmp_path"
+# Vider les dossiers tmp et graphs s'ils existent, sinon les créer
+[ -d "$graphs_path" ] && rm -rf "$graphs_path"/* || mkdir -p "$graphs_path"
+[ -d "$tmp_path" ] && rm -rf "$tmp_path"/* || mkdir -p "$tmp_path"
+
+# Créer le dossier tests s'il n'existe pas
 [ -d "$tests_path" ] || mkdir -p "$tests_path"
 
-# Initialisation de la variable start_time pour calculer le temps d'exécution
-start_time=$(date +%s.%N)
+# Vérification de l'exécutable C
+C_executable="codeC/c-wire"
+
+if [ ! -f "$C_executable" ]; then
+  echo "L'exécutable $C_executable est introuvable. Tentative de compilation..."
+  
+  # Vérification de la présence d'un Makefile
+  if [ ! -f "codeC/Makefile" ]; then
+    echo "Erreur : Makefile introuvable dans le répertoire 'codeC'."
+    exit 1
+  fi
+
+  # Compilation
+  (cd codeC && make)
+  if [ $? -ne 0 ]; then
+    echo "Erreur : La compilation a échoué."
+    exit 1
+  fi
+
+  echo "Compilation réussie."
+fi
 
 # Filtrage des colonnes en fonction de la station
 output_file="$tmp_path/output.csv"
@@ -124,7 +159,7 @@ if [ -n "$central_id" ]; then
   mv "$tmp_path/filtered_by_central.csv" "$output_file"
 fi
 
-# Filtrage des colonnes et application du filtrage des consommateurs
+# Filtrage des colonnes en fonction des consommateurs
 final_output_file="$tmp_path/final_output.csv"
 case "$consumer_type" in
   comp)
@@ -150,32 +185,24 @@ cd codeC
 ./c-wire "../$final_output_file" "../$aggregated_output_file" "$header"
 cd ..
 
-# Special processing for "lv all"
+# Traitement spécifique pour "lv all"
 if [[ "$station_type" == "lv" && "$consumer_type" == "all" ]]; then
     minmax_output_file="tests/lv_all_minmax.csv"
 
     echo "Min and Max 'capacity-load' extreme nodes" > "$minmax_output_file"
-    echo "LV Station:Capacity:Load (all)" >> "$minmax_output_file"
+    echo "$header" >> "$minmax_output_file"
 
-    # Calcul de la différence et tri global
+    # Ajouter une colonne temporaire pour la différence
     tail -n +2 "$aggregated_output_file" | \
-    awk -F':' '{print $1 ":" $2 ":" $3}' | \
-    sort -t':' -k3,3nr > "$tmp_path/sorted_lv.csv"
+    awk -F':' '{diff = ($2 > $3 ? $2 - $3 : $3 - $2); print $0 ":" diff}' | \
+    sort -t':' -k4,4n > "$tmp_path/sorted_lv.csv"
 
-    # Extraction des 10 postes avec le plus de consommation
-    head -n 10 "$tmp_path/sorted_lv.csv" > "$tmp_path/top10_lv.csv"
+    # Extraire les 10 postes avec le plus de consommation
+    head -n 10 "$tmp_path/sorted_lv.csv" | cut -d':' -f1-3 >> "$minmax_output_file"
 
-    # Écriture dans le fichier de sortie
-    cat "$tmp_path/top10_lv.csv" >> "$minmax_output_file"
-
-    # Extraction des 10 postes avec le moins de consommation (en excluant les "top 10")
-    grep -v -f "$tmp_path/top10_lv.csv" "$tmp_path/sorted_lv.csv" | \
-    tail -n 10 >> "$minmax_output_file"
+    # Extraire les 10 postes avec le moins de consommation
+    tail -n 10 "$tmp_path/sorted_lv.csv" | cut -d':' -f1-3 >> "$minmax_output_file"
 
     echo "Le fichier des postes extrêmes a été créé : $minmax_output_file"
 fi
-# Calcul du temps d'exécution
-end_time=$(date +%s.%N)
-elapsed_time=$(echo "$end_time - $start_time" | bc)
-echo "Elapsed time: $elapsed_time seconds"
-echo "The final file is available at: $aggregated_output_file"
+exit_script 0 # Appel normal pour afficher les résultats et quitter 
