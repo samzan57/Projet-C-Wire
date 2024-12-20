@@ -23,12 +23,12 @@ AVLNode* charger_fichier_csv(char* chemin_fichier) {
         ligne_num++;
 
         // Ignore the header
-        if (ligne_num == 1 && strstr(ligne, "id_station:capacity:load") != NULL) {
+        if (ligne_num == 1 && strstr(ligne, "id_station;capacity;load") != NULL) {
             continue;
         }
 
-        char* id_station = strtok(ligne, ":");
-        char* capacity_str = strtok(NULL, ":");
+        char* id_station = strtok(ligne, ";");
+        char* capacity_str = strtok(NULL, ";");
         char* load_str = strtok(NULL, "\n");
 
         if (!id_station || !capacity_str || !load_str) {
@@ -39,7 +39,7 @@ AVLNode* charger_fichier_csv(char* chemin_fichier) {
         // Secure conversion of strings to integers
         int capacity = atoi(capacity_str);
         int load = atoi(load_str);
-
+       
         // Insert into the AVL tree
         root = insert_avl(root, id_station, capacity, load);
     }
